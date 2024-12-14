@@ -5,7 +5,6 @@ from dotenv import load_dotenv
 from langchain import PromptTemplate
 from langchain.chains import LLMChain
 from langchain.llms import OpenAI
-from elevenlabs import generate, set_api_key
 
 # Load environment variables
 load_dotenv()
