@@ -1,6 +1,6 @@
 streamlit
-langchain 
+langchain
 elevenlabs
 python-dotenv
 openai
-
+langchain-community
