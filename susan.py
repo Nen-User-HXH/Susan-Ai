@@ -24,9 +24,10 @@ llm = OpenAI(temperature=0.5)
 def generate_with_retry(prompt, max_tokens=800):
     try:
         response = llm.generate([prompt], max_tokens=max_tokens)
-        if not response or not hasattr(response, "generations") or not response.generations:
-            raise ValueError("Invalid response from LLM. Ensure the prompt is formatted correctly.")
-        return response.generations[0][0].text.strip()
+        if hasattr(response, "generations") and response.generations:
+            return response.generations[0][0].text.strip()
+        else:
+            raise AttributeError("The response object does not contain 'generations'.")
     except Exception as e:
         raise e
 
@@ -35,12 +36,30 @@ def generate_section(prompt, max_tokens=800):
 
 def generate_story(input_data):
     sections = {
-        "History": "A brief patient history and background, including personal information and random name.",
-        "Initial Assessment": "Initial assessment findings, AROM, PROM, diagnosis, differential diagnosis, and special tests.",
-        "SMART Goals": "Three SMART goals based on Jill's assessment findings.",
-        "Intervention Plan": "A detailed intervention plan with justification.",
-        "Expected Outcomes": "Expected outcomes and progress monitoring plan.",
-        "Reflection": "Reflection on reasoning and any necessary adjustments to the treatment plan."
+        "History": (
+            "A detailed patient history including personal information and activities prior to surgery. "
+            "Highlight the patient's challenges and treatment history."
+        ),
+        "Initial Assessment": (
+            "Include precise AROM and PROM measurements (e.g., flexion: 90°, extension: -10°), diagnosis, "
+            "differential diagnosis, and any special tests performed."
+        ),
+        "SMART Goals": (
+            "Define short-term (4 weeks) and long-term (12 weeks) goals, ensuring goals are specific, measurable, "
+            "achievable, relevant, and time-bound."
+        ),
+        "Intervention Plan": (
+            "Provide a detailed intervention plan including exercises, manual therapy, and modalities. "
+            "Justify each intervention based on the patient's condition."
+        ),
+        "Expected Outcomes": (
+            "Highlight short-term (4 weeks) and long-term (12 weeks) expected outcomes, including improvements in "
+            "ROM, strength, functional abilities, and pain levels."
+        ),
+        "Reflection": (
+            "Reflect on Jill's feedback about her progress. Discuss adjustments made to the treatment plan and "
+            "rationale for these changes."
+        ),
     }
     
     story_text = ""
@@ -50,8 +69,8 @@ def generate_story(input_data):
             f"Patient Age: {input_data['age']}, Background: {input_data['patient_background']}, "
             f"Specialization: {input_data['domain_selected']}. Include: {section_prompt}"
         )
-        section_content = generate_section(prompt, max_tokens=800)  # Generate section content
-        story_text += f"### {section_name}\n{section_content}\n\n{'-' * 50}\n\n"
+        section_content = generate_section(prompt, max_tokens=800)
+        story_text += f"### {section_name}\n{section_content}\n\n"
     
     return story_text
 
@@ -70,7 +89,10 @@ Nothing but w's ;)
     age = st.slider("Patient Age:", 0, 100, 30)
 
     with st.form(key='my_form'):
-        patient_background = st.text_area("Enter some info for your case study:", placeholder="e.g., 'Jill, female, Parkinson or total hip a year ago'")
+        patient_background = st.text_area(
+            "Enter some info for your case study:",
+            placeholder="e.g., 'Jill, female, Parkinson or total hip a year ago'"
+        )
         
         physio_domains = [
             "Select a physiotherapy domain",
@@ -81,9 +103,12 @@ Nothing but w's ;)
             "Neurological Physiotherapy",
             "Cardiovascular Physiotherapy"
         ]
-        domain_selected = st.selectbox("Physiotherapy Specialization:", physio_domains, index=3)
+        domain_selected = st.selectbox("Physiotherapy Specialization:", physio_domains)
 
-        text = st.text_input("ADL Problem", placeholder="e.g., 'Difficulty with walking, transferring, balance, getting dressed, showering, toileting, and grooming'")
+        text = st.text_input(
+            "ADL Problem",
+            placeholder="e.g., 'Difficulty with walking, transferring, balance, getting dressed, showering, toileting, and grooming'"
+        )
 
         if st.form_submit_button("Generate Story"):
             input_data = {
@@ -93,13 +118,11 @@ Nothing but w's ;)
                 "text": text
             }
             
-            try:
-                with st.spinner('Generating story...'):
-                    story_text = generate_story(input_data)
-                st.subheader("Generated Story:")
-                st.markdown(story_text)
-            except Exception as e:
-                st.error(f"An error occurred: {e}")
+            with st.spinner('Generating story...'):
+                story_text = generate_story(input_data)
+            
+            st.subheader("Generated Story:")
+            st.markdown(story_text)
 
         if not text:
             st.info("Please complete the required inputs")
