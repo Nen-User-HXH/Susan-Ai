@@ -6,7 +6,6 @@ from langchain_core.prompts import PromptTemplate
 from langchain_community.llms import OpenAI
 from langchain.chains import LLMChain
 
-
 # Load environment variables
 load_dotenv()
 
