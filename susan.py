@@ -2,10 +2,10 @@ import os
 import time
 import streamlit as st
 from dotenv import load_dotenv
-from langchain import PromptTemplate
+from langchain_core.prompts import PromptTemplate
+from langchain_community.llms import OpenAI
 from langchain.chains import LLMChain
-from langchain.llms import OpenAI
-from elevenlabs import generate, set_api_key
+
 
 # Load environment variables
 load_dotenv()
@@ -14,27 +14,8 @@ load_dotenv()
 openai_api_key = os.getenv("OPENAI_API_KEY")
 os.environ["OPENAI_API_KEY"] = openai_api_key
 
-# Eleven Labs credentials
-set_api_key(os.getenv("ELEVEN_API_KEY"))
-
-# Audio cache and character limit
-audio_cache = {}
-MAX_CHARS = 5000
-
+# LangChain LLM
 llm = OpenAI(temperature=0.5)
-
-def generate_audio(text, voice):
-    key = (text, voice)
-    if key in audio_cache:
-        return audio_cache[key]
-
-    # Truncate text if it exceeds the character limit
-    if len(text) > MAX_CHARS:
-        text = text[:MAX_CHARS]
-
-    audio = generate(text=text, voice=voice)
-    audio_cache[key] = audio
-    return audio
 
 def generate_story(input_data):
     sections = [
@@ -67,10 +48,10 @@ def app():
     st.title("PTCharlie the Physiotherapy Case Study Generator")
 
     st.write("""
-Struggling with case studies? Let PTCharlie's AI generate detailed, realistic patient scenarios for you. Just provide basic details - PTCharlie handles the rest.
+Struggling with case studies? Let PTCharlie’s AI generate detailed, realistic patient scenarios for you. Just provide basic details - PTCharlie handles the rest.
 
 PTCharlie leverages artificial intelligence to craft structured case studies with assessment findings, treatment plans, goals, and references. 
-Customize cases to your needs for assignments, training, or professional development. Say goodbye to generic examples and let PTCharlie's AI develop nuanced, evidence-based cases that bring therapy practices to life.
+Customize cases to your needs for assignments, training, or professional development. Say goodbye to generic examples and let PTCharlie’s AI develop nuanced, evidence-based cases that bring therapy practices to life.
 """)
 
     # Age Slider
@@ -91,9 +72,6 @@ Customize cases to your needs for assignments, training, or professional develop
         domain_selected = st.selectbox("Physiotherapy Specialization:", physio_domains)
 
         text = st.text_input("ADL Problem", placeholder="e.g., 'Difficulty with walking, transferring, balance, getting dressed, showering, toileting, and grooming'")
-        
-        options = ["Bella", "Antoni", "Arnold", "AI", "Domi", "Elli", "Josh", "Rachel", "Sam"]
-        voice = st.selectbox("Voice for Audio Playback:", options)
 
         if st.form_submit_button("Generate Story"):
             input_data = {
@@ -105,14 +83,12 @@ Customize cases to your needs for assignments, training, or professional develop
             
             with st.spinner('Generating story...'):
                 story_text = generate_story(input_data)
-                audio = generate_audio(story_text, voice)
             
-            st.audio(audio, format='audio/mp3')
             st.subheader("Generated Story:")
             st.markdown(story_text)
 
-        if not text or not voice:
-            st.info("Please complete the required inputs and select a voice")
+        if not text:
+            st.info("Please complete the required inputs")
 
 if __name__ == '__main__':
     app()
