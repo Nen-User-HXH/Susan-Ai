@@ -1,6 +1,6 @@
 streamlit
 langchain
-elevenlabs
+elevenlabs>=0.2.16
 python-dotenv
 openai
 langchain-community
